@@ -1,0 +1,172 @@
+# Predictive CI/CD Reliability
+
+**Predicting Workflow Failures from Pre-Build Metadata**
+
+BITS Pilani WILP | Dissertation / Project / Project Work
+Research Area: Machine Learning for Software Engineering (CI/CD Analytics)
+
+| | |
+| --- | --- |
+| **Student** | (Insert Student Name) |
+| **BITS ID** | (Insert Student ID) |
+| **Degree Program** | (Insert Degree Name) |
+| **Project carried out at** | (Insert Organization Name & Location) |
+| **Supervisor** | (Insert Supervisor Name) |
+| **Status** | Project outline stage. Work planned 2 Nov 2026 to 7 Feb 2027 |
+
+---
+
+## Overview
+
+Continuous Integration and Continuous Delivery (CI/CD) pipelines run automated build and test workflows on every commit. When a workflow fails, developers wait longer for feedback, compute resources are consumed, and work is blocked until the cause is found.
+
+This project asks one question:
+
+> Before a CI workflow run starts, can we estimate how likely it is to fail, using only information available at that moment?
+
+If failure risk can be estimated in advance, reviewers and pipeline owners can direct attention to the riskiest runs first.
+
+## Why this project
+
+Earlier studies have predicted CI build outcomes with machine learning, but their results are often hard to trust:
+
+- Random train/test splits mix past and future builds.
+- Some features are only known after a build starts (data leakage).
+- Models are rarely compared with a simple baseline, such as each repository's own historical failure rate.
+- Failures have many causes (code regressions, flaky tests, infrastructure and configuration problems), so a prediction is not a statement about code quality.
+
+This project addresses these gaps by **fixing its evaluation rules before testing**:
+
+- A go/no-go data audit
+- A strict prediction-time definition
+- Time-based and unseen-repository holdouts
+- An acceptance criterion measured against the historical-rate baseline and the best possible ranking, with confidence intervals
+
+## Application areas
+
+| Area | What it covers |
+| --- | --- |
+| Software engineering analytics | Study CI workflow histories, commits and repository metadata from public projects |
+| Supervised machine learning | Predict workflow failure with Logistic Regression, Random Forest and gradient boosting, against strong baselines |
+| Temporal data engineering | Build leakage-safe historical features that never use information from after the prediction time |
+| Evaluation and MLOps | Evaluate on future builds and unseen repositories, calibrate risk scores, and deliver an inspectable service |
+
+## Objectives
+
+1. **Audit the dataset.** Audit a public CI dataset (outcome labels, timestamps, identifiers, feature availability) and apply a written go/no-go gate before any modelling.
+2. **Define the prediction contract.** Build a leakage-safe feature pipeline in which every run uses only information available at its prediction time, verified by automated tests.
+3. **Compare models and baselines.** Compare a dummy baseline, Logistic Regression, Random Forest and HistGradientBoosting with a smoothed historical repository failure-rate baseline, using Average Precision and recall at a 10% alert budget.
+4. **Evaluate generalization.** Evaluate on future builds and on repositories unseen in training, with calibration, feature-group ablation and error analysis.
+5. **Deliver the application.** Deliver a FastAPI service and a two-page Streamlit dashboard for inspecting historical builds, together with a model card that states the limitations.
+
+## Approach
+
+### Prediction contract
+
+Every prediction is made at a defined prediction time. Only information available at that time may be used. Repository history is reconstructed only from runs that had **already finished**. Automated tests verify that no feature uses later information.
+
+### Models
+
+| Model | Role |
+| --- | --- |
+| Dummy baseline | Floor for comparison |
+| Smoothed historical repository failure rate | Strong, simple baseline |
+| Logistic Regression | Interpretable linear model |
+| Random Forest | Tree ensemble |
+| HistGradientBoosting | Gradient boosting |
+
+### Evaluation
+
+- **Average Precision** for ranking quality on imbalanced data
+- **Recall at a 10% alert budget**: the share of all real failures caught when only the top 10% riskiest runs are flagged
+- **Temporal holdout**: train on earlier builds, test on later builds
+- **Unseen-repository holdout**: test on repositories not seen in training
+- **Calibration**: check that risk scores behave like probabilities
+- **Feature-group ablation** and **error analysis**
+- **Repository-clustered bootstrap confidence intervals**
+
+### Success criterion (fixed in advance)
+
+- Recall at the 10% alert budget of **at least 0.20**
+- Comparison against the historical-rate baseline using repository-clustered bootstrap confidence intervals
+- A missed target will be reported honestly as a finding.
+
+## Scope
+
+**In scope**
+
+- Dataset audit, feature engineering, model development and evaluation
+- Workflow-level failure prediction (success versus failure) from pre-build metadata
+- Prediction service (FastAPI) and dashboard (Streamlit)
+- Model card, Docker packaging and automated CI
+
+**Out of scope**
+
+- Live integration with GitHub
+- Identifying the cause of a failure or labelling code as defective
+- Automatic build cancellation
+- Deep-learning models
+- CatBoost / LightGBM
+- Free-form what-if predictions
+
+## Deliverables
+
+- Go/no-go data audit with a recorded decision and reasoning
+- Leakage-safe feature pipeline with automated tests
+- Trained and tuned models with comparison against baselines
+- Evaluation report: temporal and unseen-repository results, calibration, ablation, error analysis, feature importance
+- FastAPI prediction service
+- Two-page Streamlit dashboard for inspecting historical builds
+- Model card stating the limitations
+- Dockerized application with automated CI
+- Final dissertation
+
+## Plan of work
+
+| Phase | Dates | Work |
+| --- | --- | --- |
+| Data Audit & Go/No-Go | 2 Nov 2026 – 15 Nov 2026 | Dataset selection, data dictionary, label and timestamp audit, baseline feasibility, go/no-go decision |
+| EDA & Feature Engineering | 16 Nov 2026 – 29 Nov 2026 | EDA, target definition, frozen data splits, leakage-safe features with automated tests |
+| Modelling & Tuning | 30 Nov 2026 – 13 Dec 2026 | Baselines, Logistic Regression, Random Forest, gradient boosting, tuning, class-weight and buffer decisions |
+| Evaluation | 14 Dec 2026 – 27 Dec 2026 | Calibration, thresholds, single final test run, temporal and unseen-repository evaluation |
+| Analysis & Model Card | 28 Dec 2026 – 3 Jan 2027 | Feature-group ablation, error analysis, feature importance, model card |
+| Application Development | 4 Jan 2027 – 24 Jan 2027 | FastAPI service, two-page dashboard, Docker packaging and automated CI |
+| Dissertation Review | 25 Jan 2027 – 31 Jan 2027 | Contingency buffer; submit dissertation to Supervisor and Additional Examiner for review |
+| Submission | 1 Feb 2027 – 7 Feb 2027 | Final review and submission |
+
+## Tech stack
+
+- **Language and ML:** Python, scikit-learn (Logistic Regression, Random Forest, HistGradientBoosting)
+- **Service:** FastAPI
+- **Dashboard:** Streamlit
+- **Packaging and automation:** Docker, automated CI
+
+## Getting started
+
+> Setup and usage instructions will be added as the pipeline, service and dashboard are built (Application Development phase, 4 Jan – 24 Jan 2027).
+
+## Known risks and limitations
+
+- **Data availability.** A suitable public CI dataset with reliable timestamps and labels must be available. The planned audit and go/no-go gate address this.
+- **Predictions are not code-quality judgments.** Failures can come from flaky tests, infrastructure or configuration problems as well as code regressions.
+- **Historical inspection only.** The dashboard inspects past builds. There is no live GitHub integration.
+
+The full list of limitations will be stated in the model card.
+
+## References
+
+1. M. Beller, G. Gousios, and A. Zaidman. TravisTorrent: Synthesizing Travis CI and GitHub for full-stack research on continuous integration. *MSR 2017*, pp. 447–450. IEEE, 2017.
+2. F. Hassan and X. Wang. Change-aware build prediction model for stall avoidance in continuous integration. *ESEM 2017*, pp. 157–162. IEEE, 2017.
+3. M. Hilton, T. Tunnell, K. Huang, D. Marinov, and D. Dig. Usage, costs, and benefits of continuous integration in open-source projects. *ASE 2016*, pp. 426–437. ACM, 2016.
+4. Q. Luo, F. Hariri, L. Eloussi, and D. Marinov. An empirical analysis of flaky tests. *FSE 2014*, pp. 643–653. ACM, 2014.
+5. M. Mitchell et al. Model cards for model reporting. *FAT\* 2019*, pp. 220–229. ACM, 2019.
+6. Z. Ni and B. Li. Cost-effective build outcome prediction using cascaded classifiers. *MSR 2017*. IEEE, 2017.
+7. A. Niculescu-Mizil and R. Caruana. Predicting good probabilities with supervised learning. *ICML 2005*, pp. 625–632. ACM, 2005.
+8. F. Pedregosa et al. Scikit-learn: Machine learning in Python. *Journal of Machine Learning Research*, 12:2825–2830, 2011.
+9. I. Saidani, A. Ouni, M. Chouchen, and M. W. Mkaouer. Predicting continuous integration build failures using evolutionary search. *Information and Software Technology*, 128:106392, 2020.
+10. T. Saito and M. Rehmsmeier. The precision-recall plot is more informative than the ROC plot when evaluating binary classifiers on imbalanced datasets. *PLoS ONE*, 10(3):e0118432, 2015.
+
+## Acknowledgements
+
+Birla Institute of Technology and Science, Pilani, Work Integrated Learning Programmes (WILP) Division.
+Supervisor and Additional Examiner: (Insert names).

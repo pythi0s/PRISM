@@ -1,0 +1,83 @@
+What this project is about
+
+You already know that a CI/CD pipeline runs builds and tests on every commit. Sometimes a run fails, and a failure costs compute, delays feedback, and blocks developers until someone investigates.
+
+The project’s question: Before a CI workflow run starts, can we estimate how likely it is to fail, using only information we already have at that moment?
+
+If that works, a team could look at the riskiest runs first. The project is a machine learning study, and what makes it distinctive is how carefully it is evaluated. The outline says earlier studies often produced results you can’t trust, because they mixed past and future data, used information not available in advance, and never compared against a simple baseline. Every objective below guards against one of those problems.
+
+Objective 1: Audit the dataset and apply a go/no-go gate
+
+In plain words: Before building any model, check whether the data is good enough to build one.
+
+You’d use a public dataset of CI runs from open-source repositories (GitHub Actions or Travis CI, for example). The audit checks four things:
+
+Outcome labels. Does “success” or “failure” mean the same thing everywhere? A run that was cancelled or skipped isn’t a clean success or failure, and wrong labels mean the model learns the wrong thing.
+Timestamps. Are they present and reliable? The whole project depends on knowing what was known when.
+Identifiers. Can you tell which repository, commit, and workflow each run belongs to, so you can link runs into a history?
+Feature availability. Which columns would genuinely be known before a run starts, and which only appear afterwards, like build duration or number of failed tests?
+
+The go/no-go gate is a written rule you set before looking at model results: “If the data meets these conditions, we proceed. If not, we change dataset or stop.” This stops you from quietly lowering your standards after seeing disappointing numbers. Your supervisor also asked you to record the decision and reasoning in the dissertation.
+
+Objective 2: Define a prediction contract and build a leakage-safe feature pipeline
+
+This is the heart of the project. Two terms need explaining.
+
+Prediction contract. A strict definition of when a prediction is made and what you’re allowed to know at that moment. For example: “The prediction is made when a workflow run is triggered. We may use the commit’s metadata (files changed, lines added, time of day, author) and the history of earlier runs in that repository that had already finished. We may not use anything about the run itself, such as its duration or logs.”
+
+Data leakage. This is when the model’s training data accidentally contains information from the future, which makes results look great in the lab and fail in real life. Here is a typical example. Suppose one feature is “number of tests that failed in this run”. That feature essentially is the answer, but you’d never have it before the run. Leakage can also be subtle. If you compute “this repo’s failure rate over the last 20 runs”, but include a run that was still in progress when the current one started, you’ve used information that didn’t exist yet.
+
+Feature pipeline. The code that turns raw data into the numeric inputs (“features”) the model learns from. Examples include recent failure rate, time since the last failure, size of the commit, and whether the change touched test files or build config. The outline calls for historical features, meaning summaries of a repo’s past, to be built so they only look backward in time.
+
+Automated tests check the rules mechanically. For instance, a test could confirm that changing or deleting data after a run’s prediction time doesn’t change that run’s features. So you don’t just claim there’s no leakage, you prove it with tests.
+
+Objective 3: Compare models against baselines using the right metrics
+
+The models. You’ll try several, from simple to more powerful:
+
+Dummy baseline: a model that ignores the inputs and just predicts based on overall failure frequency. It sets the floor.
+Logistic Regression: a simple, interpretable model that weighs each feature linearly.
+Random Forest: many decision trees voting together, which can capture non-linear patterns.
+HistGradientBoosting: trees built one after another, each correcting the previous one’s mistakes. It’s often the strongest on tabular data like this.
+
+The key baseline: the smoothed historical repository failure rate. This is the “smart simple” competitor. It says: predict that a run will fail in proportion to how often that repo has failed before. “Smoothed” means adjusting it for repos with few runs. A repo with 1 run and 1 failure shouldn’t be scored at 100% risk, so you blend its rate toward the overall average. This matters because many repos are simply flaky or stable by nature, so this trivial rule may already work well. If your ML models can’t beat it, the ML wasn’t adding value. Earlier studies often skipped this comparison.
+
+The metrics. Failures are much rarer than successes (imbalanced data), so plain accuracy is misleading. If 90% of runs pass, a model that always says “pass” is 90% accurate and completely useless. The outline uses two better metrics:
+
+Average Precision (AP): summarizes how well the model ranks failing runs above passing ones across all possible cut-offs. Higher is better, and it’s robust for rare-event problems (Saito and Rehmsmeier, 2015).
+Recall at a 10% alert budget: imagine the team only has attention for the top 10% riskiest runs. Rank all runs by predicted risk, flag the top 10%, and ask, what fraction of all real failures did we catch? Random guessing catches about 10%. The project’s success target is at least 0.20, meaning catching at least a fifth of failures while flagging only a tenth of runs. This metric is practical because it matches how someone would actually use the tool.
+Objective 4: Evaluate generalization, with calibration, ablation and error analysis
+
+“Generalization” means: does this work on data it hasn’t seen? The project tests it two ways.
+
+Future builds (temporal split). Train on older runs and test on newer ones, as in real deployment. A random split would let the model peek at the future.
+Unseen repositories. Train on some repos and test on completely different ones. This tells you if the model learned general patterns of failure or just memorized each repo’s quirks.
+
+On top of that come three analyses:
+
+Calibration: checks whether the risk scores behave like honest probabilities. If the model says “30% risk” for 1,000 runs, about 300 should actually fail. Many models rank well but give poorly scaled scores, which can be corrected (Niculescu-Mizil and Caruana, 2005).
+Feature-group ablation: remove one group of features at a time (say, all repo-history features, or all commit-size features) and see how much performance drops. This shows which kinds of information matter.
+Error analysis: examine the cases the model gets wrong to find patterns, such as certain repos, times, or types of change where it struggles.
+
+Statistically, the success claim uses repository-clustered bootstrap confidence intervals. Runs from the same repo are correlated, so the bootstrap resamples whole repositories rather than individual runs. This gives an honest uncertainty range on the results. And the outline commits to reporting a missed target honestly as a finding, which is good research practice.
+
+Objective 5: Deliver a FastAPI service, a Streamlit dashboard, and a model card
+
+FastAPI service: a small web API. You send it the details of a historical build, and it returns the predicted failure risk. It’s how other software could use your model.
+
+Streamlit dashboard (two pages): a simple interactive web page, written in Python, where a person can browse historical builds and see the model’s risk score alongside what actually happened. Note it’s for inspecting historical builds only. Live GitHub integration and free-form “what if” predictions are explicitly out of scope.
+
+Docker and automated CI: the plan also packages everything in Docker and sets up CI for the project itself, which suits you as someone who knows pipelines.
+
+Model card: a short, standard document (Mitchell et al., 2019) describing what the model is for, what data it was trained on, how well it performs, and what it should not be used for. A key limitation here: a failure prediction is not a statement about code quality, since failures also come from flaky tests, infrastructure problems, and configuration issues.
+
+How it all fits together
+Objective 1 asks if the data is trustworthy.
+Objective 2 makes sure the model only sees what it would really know beforehand.
+Objective 3 asks if ML beats a simple, smart baseline.
+Objective 4 asks if it holds up on the future and on new repos, and why it works or fails.
+Objective 5 packages it so others can inspect it and understand its limits.
+
+It also helps to know what is not being done: finding why a build failed, auto-cancelling builds, and deep learning are all out of scope. The project is a careful, honest test of one prediction problem.
+
+If you’d like, I can go deeper on any piece, such as a worked example of leakage, how the smoothed baseline is computed, or how recall at 10% is calculated step by step.
