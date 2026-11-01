@@ -37,7 +37,7 @@ if [[ ! -x "$venv_dir/bin/python" ]]; then
 fi
 
 venv_python="$venv_dir/bin/python"
-if ! "$venv_python" -c 'import numpy, pandas, sklearn, torch, sentence_transformers, shap, matplotlib' >/dev/null 2>&1; then
+if ! "$venv_python" -c 'import numpy, pandas, sklearn, torch, sentence_transformers, shap, matplotlib, docx' >/dev/null 2>&1; then
     "$venv_python" -m pip install --upgrade pip
     "$venv_python" -m pip install -r "$requirements"
     "$venv_python" -m pip install -r "$encoder_requirements"

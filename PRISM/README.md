@@ -263,9 +263,28 @@ Read `research/DATASET_CARD.md` before interpreting results. Tiny smoke scores
 verify execution, not model quality; even perfect alignment on synthetic text
 does not establish transfer to real projects. Risk labels are assumed, noisy
 latent outcomes, not empirical defects. No production certification is claimed.
-The full multi-seed experiment must be run before drawing dissertation conclusions.
+The full three-seed synthetic experiment has completed; review the saved reports
+and limitations before drawing dissertation conclusions. It does not validate
+performance on real-project data.
 
 The report's final administrative page names Predictive CI/CD, unlike the PRISM
 scope on pages 1-9. PRISM is the user-confirmed specification; the PDF is unchanged.
 Generative LLMs, organizational integrations, executable-code analysis, and
 production deployment are out of scope.
+
+## Dissertation Report
+
+The v4-styled literature review and full three-seed results report is generated
+from the saved evaluation outputs; it does not train models again:
+
+```bash
+.venv/bin/python -m PRISM.research.generate_dissertation_report \
+	--artifacts PRISM/research/artifacts/full_bge_cpu \
+	--output PRISM/PRISM_Dissertation_Results_Report.docx
+```
+
+The report includes the verified bibliography, methodology, per-seed and
+difficulty metrics, retrieval, model ablations, errors, calibration figures,
+reproducibility details, and synthetic-benchmark limitations. The full three-seed
+run is complete; review the DOCX and per-seed HTML reports before dissertation
+submission. Results do not establish external validity on real repositories.
