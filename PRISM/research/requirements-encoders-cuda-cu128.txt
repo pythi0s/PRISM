@@ -1,0 +1,4 @@
+-r requirements.txt
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.7.1
+sentence-transformers==5.1.2

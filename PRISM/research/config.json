@@ -1,0 +1,9 @@
+{
+  "bi_encoder": "BAAI/bge-base-en-v1.5",
+  "safe_bi_encoder": "sentence-transformers/all-MiniLM-L6-v2",
+  "cross_encoder": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+  "batch_size": 2,
+  "max_sequence_length": 128,
+  "seeds": [42, 123, 2026],
+  "profiles": {"smoke": 100, "pilot": 1000, "full": 3000}
+}

@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.pytest_cache/
+PRISM/research/artifacts/*
+!PRISM/research/artifacts/full_bge_cpu.tar.gz
+!PRISM/research/artifacts/full_bge_cpu.tar.gz.sha256
+PRISM/research/model_cache/
